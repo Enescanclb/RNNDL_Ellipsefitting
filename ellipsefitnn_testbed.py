@@ -10,6 +10,12 @@ class MyNN(nn.Module):
         self.leakyrelu1 = nn.LeakyReLU(0.2)
         self.hidden2 = nn.Linear(hidden_size, hidden_size)
         self.leakyrelu2 = nn.LeakyReLU(0.2)
+        self.hidden3 = nn.Linear(hidden_size, hidden_size)
+        self.leakyrelu3 = nn.LeakyReLU(0.2)
+        self.hidden4 = nn.Linear(hidden_size, hidden_size)
+        self.leakyrelu4 = nn.LeakyReLU(0.2)
+        self.hidden5 = nn.Linear(hidden_size, hidden_size)
+        self.leakyrelu5 = nn.LeakyReLU(0.2)
         self.output_layer = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
@@ -17,11 +23,17 @@ class MyNN(nn.Module):
         x = self.leakyrelu1(x)
         x = self.hidden2(x)
         x = self.leakyrelu2(x)
+        x = self.hidden3(x)
+        x = self.leakyrelu3(x)
+        x = self.hidden4(x)
+        x = self.leakyrelu4(x)
+        x = self.hidden5(x)
+        x = self.leakyrelu5(x)
         x = self.output_layer(x)
         return x
 
-model = MyNN(10, 10, 5)
-model.load_state_dict(torch.load('trained_model_nn_10-2.pth'))
+model = MyNN(10, 32, 5)
+model.load_state_dict(torch.load('trained_model_nn_32-5.pth'))
 
 B = np.random.uniform(2, 5, 1)
 A = B + np.random.uniform(2, 5, 1)
@@ -55,6 +67,7 @@ plt.grid(True)
 measurements_tt = torch.from_numpy(new_measurements).to(torch.float32)
 measurements_tt = measurements_tt.flatten()
 output = model(measurements_tt)
+print(output.detach())
 geo_parameters = output.detach().numpy()
 A = geo_parameters[0]
 B = geo_parameters[1]

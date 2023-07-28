@@ -179,6 +179,12 @@ class MyNN(nn.Module):
         self.leakyrelu1 = nn.LeakyReLU(0.2)
         self.hidden2 = nn.Linear(hidden_size, hidden_size)
         self.leakyrelu2 = nn.LeakyReLU(0.2)
+        self.hidden3 = nn.Linear(hidden_size, hidden_size)
+        self.leakyrelu3 = nn.LeakyReLU(0.2)
+        self.hidden4 = nn.Linear(hidden_size, hidden_size)
+        self.leakyrelu4 = nn.LeakyReLU(0.2)
+        self.hidden5 = nn.Linear(hidden_size, hidden_size)
+        self.leakyrelu5 = nn.LeakyReLU(0.2)
         self.output_layer = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
@@ -186,26 +192,58 @@ class MyNN(nn.Module):
         x = self.leakyrelu1(x)
         x = self.hidden2(x)
         x = self.leakyrelu2(x)
+        x = self.hidden3(x)
+        x = self.leakyrelu3(x)
+        x = self.hidden4(x)
+        x = self.leakyrelu4(x)
+        x = self.hidden5(x)
+        x = self.leakyrelu5(x)
         x = self.output_layer(x)
         return x
 
 
 # Model defining, load and output trial
-model = MyNN(10, 10, 5)
-model.load_state_dict(torch.load('trained_model_nn_10-2.pth'))
+model = MyNN(10, 32, 5)
+#model.load_state_dict(torch.load('trained_model_nn_32-5.pth'))
 #measurements_tt = torch.from_numpy(measurements).to(torch.float32)
 #measurements_tt = measurements_tt.unsqueeze(0)
 #measurements_tt_length = torch.tensor([measurements_tt.size(1)], dtype=torch.int64)
 #output = model(measurements_tt)
 
+def ws_dist(nn_output, label):
+    nn_mid=torch.tensor([[(nn_output[0].item())**2, 0], [0, (nn_output[1].item())**2]])
+    s = torch.sin(nn_output[4])
+    c = torch.cos(nn_output[4])
+    nn_rot = torch.stack([torch.stack([c, -s]),
+                       torch.stack([s, c])])
+    nn_mu=torch.tensor([[nn_output[2].item()],[nn_output[3].item()]])
+    nn_cov=torch.mm(torch.mm(nn_rot.double(),nn_mid.double()),torch.transpose(nn_rot.double(),0,1))
+
+    label_mid = torch.tensor([[(label[0].item())**2, 0], [0, (label[1].item())**2]])
+    s = torch.sin(label[4])
+    c = torch.cos(label[4])
+    label_rot = torch.stack([torch.stack([c, -s]),
+                          torch.stack([s, c])])
+    label_mu = torch.tensor([[label[2].item()], [label[3].item()]])
+    label_cov = torch.mm(torch.mm(label_rot.double(), label_mid.double()), torch.t(label_rot.double()))
+
+    dist=torch.sum(torch.square(nn_mu-label_mu))+torch.trace(nn_cov+label_cov-2*torch.sqrt(torch.mm(torch.mm(torch.sqrt(nn_cov), label_cov),torch.sqrt(nn_cov))))
+    if torch.isnan(dist):
+        print("loss=nan")
+        exit()
+    else:
+        return dist
 
 def sine_loss(nn_output, label):
     return torch.sin(nn_output - label).square().mean()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.00001, weight_decay=0.00001)
 
-# Training
-num_training_ellipses = 100
+# Dataset Generation
+'''
+num_training_ellipses = 25
 plt.figure()
+dataset=torch.zeros([num_training_ellipses*4, 10],dtype=torch.float32)
+labelset=torch.zeros([num_training_ellipses*4, 5], dtype=torch.float32)
 for j in range(num_training_ellipses):
     print("ellipse number:", j+1)
     B = np.random.uniform(0, 5, 1)
@@ -226,14 +264,14 @@ for j in range(num_training_ellipses):
     y_ellipse = A * np.cos(angles) * np.sin(tau) + B * np.sin(angles) * np.cos(tau) + K
 
 
-    plt.plot(x_ellipse, y_ellipse, label='Train True Ellipse')
+    # plt.plot(x_ellipse, y_ellipse, label='Train True Ellipse')
     # plt.scatter(x_measurement_wnoise, y_measurement_wnoise, color='red', label='Sampled Points')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.title('True Ellipse')
-    plt.legend()
-    plt.axis('equal')
-    plt.grid(True)
+    # plt.xlabel('X')
+    # plt.ylabel('Y')
+    # plt.title('True Ellipse')
+    # plt.legend()
+    # plt.axis('equal')
+    # plt.grid(True)
 
     for k in range(4):
         random_angles = np.linspace(tau-np.pi/9, tau+np.pi/9, 5)+k*np.pi/2
@@ -242,36 +280,82 @@ for j in range(num_training_ellipses):
         x_measurement_wnoise = x_measurement + np.random.normal(0, x_noise, x_measurement.shape)
         y_measurement_wnoise = y_measurement + np.random.normal(0, y_noise, y_measurement.shape)
         measurements = np.column_stack((x_measurement_wnoise, y_measurement_wnoise))
-        if k == 0:
-            plt.scatter(x_measurement_wnoise, y_measurement_wnoise, color='red', label='Sampled Points up')
-        if k == 1:
-            plt.scatter(x_measurement_wnoise, y_measurement_wnoise, color='blue', label='Sampled Points left')
-        if k == 2:
-            plt.scatter(x_measurement_wnoise, y_measurement_wnoise, color='m', label='Sampled Points down')
-        if k == 3:
-            plt.scatter(x_measurement_wnoise, y_measurement_wnoise, color='c', label='Sampled Points right')
+        # if k == 0:
+        #     plt.scatter(x_measurement_wnoise, y_measurement_wnoise, color='red', label='Sampled Points up')
+        # if k == 1:
+        #     plt.scatter(x_measurement_wnoise, y_measurement_wnoise, color='blue', label='Sampled Points left')
+        # if k == 2:
+        #     plt.scatter(x_measurement_wnoise, y_measurement_wnoise, color='m', label='Sampled Points down')
+        # if k == 3:
+        #     plt.scatter(x_measurement_wnoise, y_measurement_wnoise, color='c', label='Sampled Points right')
         measurements_tt = torch.from_numpy(measurements).to(torch.float32)
         measurements_tt = measurements_tt.flatten()
-        print(measurements_tt.shape)
-        epochs = 1000
-        for epoch in range(epochs):
-            model.train()
-            optimizer.zero_grad()
+        dataset[j*4+k]=measurements_tt
+        labelset[j*4+k]=label_tensor
+
+torch.save(dataset, 'vdata_25-4.t')
+torch.save(labelset, 'vlabel_25-4.t')
+plt.show()
+
+'''
+# Training
+
+dataset=torch.load('data_1000-4.t')
+labelset=torch.load('label_1000-4.t')
+validate_data=torch.load('vdata_25-4.t')
+validate_label=torch.load('vlabel_25-4.t')
+epochs = 5
+last_avg_loss=9999
+val_losses=[]
+for epoch in range(epochs):
+    for iter in range(len(dataset)):
+        measurements_tt=dataset[iter]
+        label_tensor=labelset[iter]
+        model.train()
+        optimizer.zero_grad()
+        output = model(measurements_tt)
+        output = output.squeeze(0)
+        if torch.isnan(output).any():
+            print("output=nan")
+            exit()
+        # choose loss function: sine_loss is not really reliable
+        # loss=sine_loss(output, label_tensor)
+        loss=ws_dist(output, label_tensor)
+        #loss = nn.MSELoss()(output, label_tensor)
+        print(loss.item())
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
+        optimizer.step()
+        if loss == 0:
+            print("loss is 0")
+            break
+    if epoch % 10 == 0:
+        sum_losses=0
+        for val in range(len(validate_data)):
+            measurements_tt = validate_data[val]
+            label_tensor = validate_label[val]
             output = model(measurements_tt)
             output = output.squeeze(0)
-            # choose loss function: sine_loss is not really reliable
-            # loss=sine_loss(output, label_tensor)
             loss = nn.MSELoss()(output, label_tensor)
-            loss.backward()
-            optimizer.step()
-            if epoch % 100 == 0:
-                print(loss.item())
-
-            if loss == 0:
-                print("loss is 0")
-                break
-
-    torch.save(model.state_dict(), 'trained_model_nn_10-2.pth')
+            sum_losses=sum_losses+loss
+        avg_val_loss=sum_losses/len(validate_data)
+        print(avg_val_loss.item())
+        val_losses.append(avg_val_loss.item())
+        if last_avg_loss <= avg_val_loss:
+            last_avg_loss=avg_val_loss
+            print("loss decay")
+            break
+        else:
+            last_avg_loss = avg_val_loss
+            torch.save(model.state_dict(), 'trained_model_nn_32-5.pth')
+plt.figure()
+plt.plot(np.linspace(0, len(val_losses), len(val_losses)), val_losses, label='Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('Loss')
+plt.legend()
+plt.axis('equal')
+plt.grid(True)
 plt.show()
 
 
@@ -347,7 +431,6 @@ measurements_tt = torch.from_numpy(new_measurements).to(torch.float32)
 measurements_tt = measurements_tt.flatten()
 output = model(measurements_tt)
 geo_parameters = output.detach().numpy()
-print(geo_parameters)
 A = geo_parameters[0]
 B = geo_parameters[1]
 H = geo_parameters[2]
