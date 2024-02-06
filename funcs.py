@@ -152,3 +152,29 @@ def tau_loss(output, label):
         mean_all = mean_all + mean_s
         mean = mean_all / len(output)
     return mean
+
+def superellipse(A, B, H, K, tau, n):
+    angles = np.linspace(0, 2*np.pi, 1000)
+    cos_tau = np.cos(tau)
+    sin_tau = np.sin(tau)
+    x = A * np.sign(np.cos(angles)) * np.abs(np.cos(angles)) ** (2/n) * cos_tau - B * np.sign(np.sin(angles)) * np.abs(np.sin(angles)) ** (2/n) * sin_tau + H
+    y = A * np.sign(np.cos(angles)) * np.abs(np.cos(angles)) ** (2/n) * sin_tau + B * np.sign(np.sin(angles)) * np.abs(np.sin(angles)) ** (2/n) * cos_tau + K
+    return x, y
+
+def superellipse_sampler_1(A, B, H, K, tau, q, angles):
+    q_dists = (abs(np.cos(angles + tau))**q + abs(np.sin(angles + tau))**q)**(-1/q)
+    x = q_dists * np.cos(angles + tau) * A * np.cos(tau) - q_dists * np.sin(angles + tau) * B * np.sin(tau) + H
+    y = q_dists * np.cos(angles + tau) * A * np.sin(tau) + q_dists * np.sin(angles + tau) * B * np.cos(tau) + K
+    return x, y
+
+def testbed_loss(expanded_output,expanded_label):
+    loss_A = (expanded_output[0]-expanded_label[0])**2
+    loss_B = (expanded_output[1]-expanded_label[1])**2
+    loss_H = (expanded_output[2]-expanded_label[2])**2
+    loss_K = (expanded_output[3]-expanded_label[3])**2
+    loss_tau = (expanded_output[4]-expanded_label[4])**2
+    loss_Q = (expanded_output[5]-expanded_label[5])**2
+    total_loss=loss_A+loss_B+loss_H+loss_K+loss_Q+loss_tau
+    loss_list=[loss_A,loss_B,loss_H,loss_K,loss_tau,loss_Q,total_loss]
+    return loss_list
+    
