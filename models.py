@@ -87,19 +87,8 @@ class StackedLSTM(nn.Module):
         self.prior_info_encoder = nn.Linear(prior_size, hidden_size)
         self.measurement_decoder = nn.LSTM(measurement_size, hidden_size,num_layers, batch_first=True)
         self.output_layer = nn.Linear(hidden_size, output_size)
-        
         self.linear_pp = nn.Linear(measurement_size+prior_size,hidden_size)
         self.lstm = nn.LSTM(hidden_size, hidden_size, num_layers, batch_first=True)
-
-
-    # def forward(self, measurements,prior):
-    #     batch_size, seq_len, input_dim = measurements.size()
-    #     measurement_hidden, measurement_state = self.measurement_decoder(measurements) #process measurements
-    #     encoded_prior = self.prior_info_encoder(prior) #process prior
-    #     combined_input = torch.cat((encoded_prior[0], measurement_hidden[:, -1, :]), dim=1) #combine prior and measurements
-    #     updated_measurements = self.output_layer(combined_input) #process combined information
-        
-    #     return updated_measurements
     
     def forward(self, measurements, prior_info):
         batch_size, seq_len, input_dim = measurements.size()
@@ -108,5 +97,5 @@ class StackedLSTM(nn.Module):
         processed_input=self.linear_pp(combined_input)
         lstm_output, _ = self.lstm(processed_input)
         updated_prior_info = self.output_layer(lstm_output[:, -1, :])
-        
         return updated_prior_info
+    

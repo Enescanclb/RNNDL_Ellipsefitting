@@ -136,8 +136,8 @@ if Test_mode == 'LSTM':
         frame.append(expanded_label)
         A = (ellipse[0].item()) *10
         B = (ellipse[1].item()) * 10
-        H = (ellipse[2].item())*50
-        K = (ellipse[3].item())*50
+        H = (ellipse[2].item())*75
+        K = (ellipse[3].item())*75
         tau = ellipse[4].item()*np.pi
         q = ellipse[5].item()*8 + 2
         expanded_output = [A, B, H, K, tau,q]
@@ -146,8 +146,8 @@ if Test_mode == 'LSTM':
         time_updated=output
         A = (fprior[0].item()) *10
         B = (fprior[1].item()) * 10
-        H = (fprior[2].item())*50
-        K = (fprior[3].item())*50
+        H = (fprior[2].item())*75
+        K = (fprior[3].item())*75
         tau = fprior[4].item()*np.pi
         q = fprior[5].item()*8 + 2
         expanded_prior = [A, B, H, K, tau,q]
@@ -157,8 +157,8 @@ if Test_mode == 'LSTM':
         expanded_new_prior=[expanded_output[0],expanded_output[1],expanded_output[2],expanded_output[3],expanded_output[4],expanded_output[5]]
         prior[0][0][0]=expanded_new_prior[0]/10
         prior[0][0][1]=expanded_new_prior[1]/10
-        prior[0][0][2]=expanded_new_prior[2]/50
-        prior[0][0][3]=expanded_new_prior[3]/50
+        prior[0][0][2]=expanded_new_prior[2]/75
+        prior[0][0][3]=expanded_new_prior[3]/75
         prior[0][0][4]=expanded_new_prior[4]/np.pi
         prior[0][0][5]=(expanded_new_prior[5]-2)/8
         prev_output=expanded_output

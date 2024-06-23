@@ -12,12 +12,12 @@ from funcs import ws_dist_batch
 loss_fn=nn.MSELoss()
 
 
-epochs = 11
+epochs = 31
 NN_batchsize=32
 #Train modes: NN, RNN , LSTM, SLSTM
 train_mode='SLSTM'
 load = 0
-learning_rate = 1e-5
+learning_rate = 1e-3
 number_points = 10
 last_avg_loss = 9999
 val_losses = []
@@ -261,7 +261,7 @@ if train_mode == 'SLSTM':
     validate_label = matfile[1]
     val_prior = matfile[2]
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,weight_decay=1e-4)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=2)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=1)
     batch_size = 1
     loader = torch.utils.data.DataLoader(list(zip(datain, labelin,prior)), shuffle=True, batch_size=batch_size)
     val_loader = torch.utils.data.DataLoader(list(zip(validate_data, validate_label,val_prior)), shuffle=False,
@@ -277,27 +277,21 @@ if train_mode == 'SLSTM':
             output = model(batch,input_prior).float()
             label = labelset[0].float()
             loss = custom_loss(output, label)
-            # loss_tensor = weightedMSEtensor(output, label)
-            # A_list.extend(loss_tensor[0])
-            # B_list.extend(loss_tensor[1])
-            # H_list.extend(loss_tensor[2])
-            # K_list.extend(loss_tensor[3])
-            # tau_list.extend(loss_tensor[4])
             loss.backward()
             train_losses.append(loss.item())
             torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
             optimizer.step()
         if epoch % 5 == 0:
             avg_val_loss = 0
+            model.eval()
             for validate_data, validate_label,val_prior in val_loader:
-                model.eval()
                 validate_data=validate_data.float()
                 val_input_prior=val_prior.float()
                 output = model(validate_data,val_input_prior).float()
-                model.train()
                 label = validate_label[0].float()
                 val_loss = loss_fn(output, label)
                 avg_val_loss = avg_val_loss + val_loss
+            model.train()
             val_losses.append(avg_val_loss.item())
             scheduler.step(avg_val_loss)
             print("validation loss in epoch ", epoch, ":", avg_val_loss.item() / 100)

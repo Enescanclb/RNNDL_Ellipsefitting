@@ -292,7 +292,7 @@ if Test_Mode == 'SLSTM':
     validate_label = data[1]
     prior = data[2]
     batch_size = 1
-    val_loader = torch.utils.data.DataLoader(list(zip(validate_data, validate_label,prior)), shuffle=False,
+    val_loader = torch.utils.data.DataLoader(list(zip(validate_data, validate_label,prior)), shuffle=True,
                                              batch_size=batch_size)
     seq_length = torch.ones(1) * 10
     frames=[]
@@ -322,8 +322,8 @@ if Test_Mode == 'SLSTM':
         
         A = (ellipse[0].item()) *10
         B = (ellipse[1].item()) * 10
-        H = (ellipse[2].item())*50
-        K = (ellipse[3].item())*50
+        H = (ellipse[2].item())*75
+        K = (ellipse[3].item())*75
         tau = ellipse[4].item()*np.pi
         q = ellipse[5].item()*8 + 2
         expanded_output = [A, B, H, K, tau,q]
